@@ -2,25 +2,14 @@
 
 import React from 'react';
 import Square from './Square';
-import { BoardProps, WinnerResult, SquareValue } from '../types/game';
+import { useBoard } from './useBoard';
 
-const Board: React.FC<BoardProps> = ({ xIsNext, squares, onPlay }) => {
-  function handleClick(i: number): void {
-    if (calculateWinner(squares).winner || squares[i]) {
-      return;
-    }
-    const nextSquares = squares.slice();
-    if (xIsNext) {
-      nextSquares[i] = "X";
-    } else {
-      nextSquares[i] = "O";
-    }
-    onPlay(nextSquares, i);
-  }
+const Board: React.FC<{ xIsNext: boolean; squares: ('X' | 'O' | null)[]; onPlay: (nextSquares: ('X' | 'O' | null)[], moveIndex: number) => void }> = ({ xIsNext, squares, onPlay }) => {
+  const { handleClick, calculateWinner } = useBoard();
 
-  const { winner, winningLine }: WinnerResult = calculateWinner(squares);
-  let status: string;
+  const { winner, winningLine } = calculateWinner(squares);
   
+  let status: string;
   if (winner) {
     status = "Победитель: " + winner;
   } else if (squares.every(square => square !== null)) {
@@ -29,59 +18,36 @@ const Board: React.FC<BoardProps> = ({ xIsNext, squares, onPlay }) => {
     status = "Следующий игрок: " + (xIsNext ? "X" : "O");
   }
 
-  // Создание доски с помощью циклов
-  const board: React.ReactElement[] = [];
+  // Создаем доску 3x3 с помощью вложенных циклов
+  const boardRows = [];
   for (let row = 0; row < 3; row++) {
-    const boardRow: React.ReactElement[] = [];
+    const squaresInRow = [];
     for (let col = 0; col < 3; col++) {
       const index = row * 3 + col;
-      boardRow.push(
+      squaresInRow.push(
         <Square 
           key={index}
           value={squares[index]} 
-          onSquareClick={() => handleClick(index)}
+          onSquareClick={() => handleClick(index, squares, xIsNext, onPlay)}
           isWinning={!!winningLine && winningLine.includes(index)}
         />
       );
     }
-    board.push(
-      <div key={row} className="board-row">
-        {boardRow}
+    boardRows.push(
+      <div key={row} className="flex justify-center">
+        {squaresInRow}
       </div>
     );
   }
 
   return (
-    <>
-      <div className="status">{status}</div>
-      {board}
-    </>
+    <div className="flex flex-col items-center">
+      <div className="text-2xl font-bold mb-4 text-gray-800">{status}</div>
+      <div className="inline-block border-2 border-gray-800 rounded-lg overflow-hidden">
+        {boardRows}
+      </div>
+    </div>
   );
 };
-
-function calculateWinner(squares: SquareValue[]): WinnerResult {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return { 
-        winner: squares[a] as 'X' | 'O',  // Добавляем приведение типа
-        winningLine: [a, b, c] 
-      };
-    }
-  }
-  
-  return { winner: null, winningLine: null };
-}
 
 export default Board;

@@ -1,51 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Board from './Board';
-import { GameHistory, BoardState } from '../types/game';
+import { useGame } from './useGame';
 
 const Game: React.FC = () => {
-  const [history, setHistory] = useState<GameHistory[]>([{ 
-    squares: Array(9).fill(null), 
-    moveLocation: null 
-  }]);
-  const [currentMove, setCurrentMove] = useState<number>(0);
-  const [sortAscending, setSortAscending] = useState<boolean>(true);
-  
-  const xIsNext: boolean = currentMove % 2 === 0;
-  const currentSquares: BoardState = history[currentMove].squares;
+  const {
+    history,
+    currentMove,
+    sortAscending,
+    xIsNext,
+    currentSquares,
+    handlePlay,
+    jumpTo,
+    toggleSortOrder
+  } = useGame();
 
-  function handlePlay(nextSquares: BoardState, moveIndex: number): void {
-    const row: number = Math.floor(moveIndex / 3) + 1;
-    const col: number = (moveIndex % 3) + 1;
-    const nextHistory: GameHistory[] = [
-      ...history.slice(0, currentMove + 1), 
-      { 
-        squares: nextSquares, 
-        moveLocation: `(${row}, ${col})` 
-      }
-    ];
-    setHistory(nextHistory);
-    setCurrentMove(nextHistory.length - 1);
-  }
-
-  function jumpTo(nextMove: number): void {
-    setCurrentMove(nextMove);
-  }
-
-  function toggleSortOrder(): void {
-    setSortAscending(!sortAscending);
-  }
-
-  // Создание списка ходов с возможностью сортировки
-  let moves = history.map((step: GameHistory, move: number) => {
-    let description: string;
-    
+  let moves = history.map((step, move) => {
+    let description;
     if (move === currentMove) {
       description = `Вы на ходу №${move} ${step.moveLocation || ''}`;
       return (
-        <li key={move}>
-          <div>{description}</div>
+        <li key={move} className="mb-2">
+          <div className="font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded">
+            {description}
+          </div>
         </li>
       );
     } else if (move > 0) {
@@ -55,27 +34,36 @@ const Game: React.FC = () => {
     }
     
     return (
-      <li key={move}>
-        <button onClick={() => jumpTo(move)}>{description}</button>
+      <li key={move} className="mb-2">
+        <button 
+          onClick={() => jumpTo(move)}
+          className="text-blue-500 hover:text-blue-700 underline transition-colors px-3 py-1 hover:bg-blue-50 rounded"
+        >
+          {description}
+        </button>
       </li>
     );
   });
 
-  // Сортировка ходов
   if (!sortAscending) {
     moves = moves.reverse();
   }
 
   return (
-    <div className="game">
-      <div className="game-board">
+    <div className="flex flex-col md:flex-row gap-8 p-6 font-sans max-w-6xl mx-auto">
+      <div className="flex-1">
         <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
       </div>
-      <div className="game-info">
-        <button onClick={toggleSortOrder}>
-          Сортировка: {sortAscending ? "по возрастанию" : "по убыванию"}
-        </button>
-        <ol>{moves}</ol>
+      <div className="md:w-80">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <button 
+            onClick={toggleSortOrder}
+            className="w-full mb-4 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold"
+          >
+            Сортировка: {sortAscending ? "по возрастанию" : "по убыванию"}
+          </button>
+          <ol className="space-y-2 max-h-96 overflow-y-auto">{moves}</ol>
+        </div>
       </div>
     </div>
   );
